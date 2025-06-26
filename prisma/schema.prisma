@@ -13,20 +13,81 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ✅ Nouvelle table pour les catégories dynamiques
+model Categorie {
+  id          String        @id @default(cuid())
+  nom         String        @unique
+  description String?
+  couleur     String?       // Pour l'affichage (hex color)
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  
+  signalements Signalement[]
+}
+
+// ✅ Nouvelle table pour les statuts dynamiques
+model Statut {
+  id          String        @id @default(cuid())
+  nom         String        @unique
+  description String?
+  couleur     String?       // Pour l'affichage
+  ordre       Int           @default(0) // Pour définir l'ordre des statuts
+  estFinal    Boolean       @default(false) // Si c'est un statut final
+  createdAt   DateTime      @default(now())
+  
+  signalements      Signalement[]
+  historiqueAncien  HistoriqueStatut[] @relation("AncienStatut")
+  historiqueNouveau HistoriqueStatut[] @relation("NouveauStatut")
+}
+
+// ✅ Table pour les administrateurs
+model Administrateur {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  nom       String
+  motDePasse String  // Hash du mot de passe
+  role      String   @default("admin") // admin, super_admin
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  
+  historiqueStatuts HistoriqueStatut[]
+}
+
+// ✅ Historique des changements de statut
+model HistoriqueStatut {
+  id              String   @id @default(cuid())
+  signalementId   String
+  ancienStatutId  String?
+  nouveauStatutId String
+  adminId         String
+  commentaire     String?
+  createdAt       DateTime @default(now())
+  
+  signalement     Signalement    @relation(fields: [signalementId], references: [id], onDelete: Cascade)
+  ancienStatut    Statut?        @relation("AncienStatut", fields: [ancienStatutId], references: [id])
+  nouveauStatut   Statut         @relation("NouveauStatut", fields: [nouveauStatutId], references: [id])
+  administrateur  Administrateur @relation(fields: [adminId], references: [id])
+}
+
 model Signalement {
   id          String        @id @default(cuid())
   titre       String
   description String
-  categorie   String
+  categorieId String        // ✅ Référence vers la table Categorie
+  statutId    String        // ✅ Référence vers la table Statut
   lieu        String?
   mediaUrl    String?
-  statut      String        @default("Non traité")
   votes       Int           @default(0)
   createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt // ✅ Ajouté pour tracer les modifications
   codeSuivi   String        @unique
+  
+  // Relations
+  categorie   Categorie     @relation(fields: [categorieId], references: [id])
+  statut      Statut        @relation(fields: [statutId], references: [id])
   commentaires Commentaire[]
+  historiqueStatuts HistoriqueStatut[]
 }
-
 
 model Commentaire {
   id            String   @id @default(cuid())
