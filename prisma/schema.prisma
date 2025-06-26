@@ -1,0 +1,38 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Signalement {
+  id          String        @id @default(cuid())
+  titre       String
+  description String
+  categorie   String
+  lieu        String?
+  mediaUrl    String?
+  statut      String        @default("Non traité")
+  votes       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  codeSuivi   String        @unique
+  commentaires Commentaire[]
+}
+
+
+model Commentaire {
+  id            String   @id @default(cuid())
+  message       String
+  signalementId String
+  createdAt     DateTime @default(now())
+
+  signalement   Signalement @relation(fields: [signalementId], references: [id], onDelete: Cascade)
+}
