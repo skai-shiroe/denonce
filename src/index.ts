@@ -52,8 +52,8 @@ const app = new Elysia()
   .use(adminRoutes);
 
 // Démarrer le serveur
-app.listen(3000);
+app.listen(3001);
 
-console.log(`🦊 Elysia is running at http://localhost:3000`);
-console.log(`📚 Documentation disponible sur: http://localhost:3000/swagger`);
+console.log(`🦊 Elysia is running at http://localhost:3001`);
+console.log(`📚 Documentation disponible sur: http://localhost:3001/swagger`);
 console.log(`🔐 Pour tester l'admin: POST /api/admin/login avec email: admin@denonce.tg, motDePasse: admin123`);

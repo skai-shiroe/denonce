@@ -3,7 +3,7 @@ import { randomUUIDv7 } from 'bun';
 import { prisma } from '../lib/prisma';
 
 // ✅ NOUVEAU - Ajouté au début du fichier
-const DEFAULT_IMAGE_URL = `http://localhost:3000/assets/signalment.png`;
+const DEFAULT_IMAGE_URL = `http://localhost:3001/assets/signalment.png`;
 
 export const declarationRoutes = new Elysia({ prefix: '/api/declarations' })
 
