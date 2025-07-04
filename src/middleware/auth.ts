@@ -30,7 +30,15 @@ export const authMiddleware = async (authorization: string | undefined) => {
     throw new Error('Token manquant');
   }
 
-  const token = authorization.replace('Bearer ', '');
+  // Gérer les cas où le token peut être avec ou sans "Bearer "
+  const token = authorization.startsWith('Bearer ') 
+    ? authorization.replace('Bearer ', '') 
+    : authorization;
+    
+  if (!token || token.trim() === '') {
+    throw new Error('Token manquant');
+  }
+
   const payload = verifyToken(token);
   
   if (!payload) {

@@ -60,7 +60,7 @@ export const adminRoutes = new Elysia({ prefix: '/api/admin' })
     }
   })
 
-  // 🔒 Middleware pour toutes les routes protégées
+  // 🔒 Middleware pour toutes les routes protégées - VERSION CORRIGÉE
   .derive(async ({ headers, set, request }) => {
     // Exclure la route de login
     if (request.url.endsWith('/login')) {
@@ -68,28 +68,44 @@ export const adminRoutes = new Elysia({ prefix: '/api/admin' })
     }
 
     try {
-      const auth = await authMiddleware(headers.authorization);
+      // Vérifier plusieurs sources possibles pour l'authorization
+      const authHeader = headers.authorization || headers.Authorization;
+      
+      if (!authHeader) {
+        set.status = 401;
+        throw new Error('Token manquant - En-tête Authorization requis');
+      }
+
+      const auth = await authMiddleware(authHeader);
       return { currentAdmin: auth.admin, payload: auth.payload };
     } catch (error: any) {
       set.status = 401;
-      throw new Error(error.message);
+      throw new Error(error.message || 'Non autorisé');
     }
   })
 
   // 📂 Gestion des catégories - Lister toutes (PROTÉGÉ)
-  .get('/categories', async ({ currentAdmin }) => {
+  .get('/categories', async ({ currentAdmin, set }) => {
     if (!currentAdmin) {
-      throw new Error('Non autorisé');
+      set.status = 401;
+      return { error: 'Non autorisé' };
     }
 
-    return await prisma.categorie.findMany({
-      include: {
-        _count: {
-          select: { signalements: true }
-        }
-      },
-      orderBy: { nom: 'asc' }
-    });
+    try {
+      const categories = await prisma.categorie.findMany({
+        include: {
+          _count: {
+            select: { signalements: true }
+          }
+        },
+        orderBy: { nom: 'asc' }
+      });
+
+      return categories;
+    } catch (error: any) {
+      set.status = 500;
+      return { error: 'Erreur lors de la récupération des catégories' };
+    }
   }, {
     response: {
       200: t.Array(t.Object({
@@ -104,6 +120,9 @@ export const adminRoutes = new Elysia({ prefix: '/api/admin' })
         }),
       })),
       401: t.Object({
+        error: t.String(),
+      }),
+      500: t.Object({
         error: t.String(),
       }),
     },
@@ -530,54 +549,55 @@ export const adminRoutes = new Elysia({ prefix: '/api/admin' })
     }
   })
 
-  // 📄 Détails d'un signalement (PROTÉGÉ)
-  .get('/signalements/:id', async ({ params, set, currentAdmin }) => {
+  // // 📄 Détails d'un signalement (PROTÉGÉ)
+  // .get('/signalements/:id', async ({ params, set, currentAdmin }) => {
+  //   if (!currentAdmin) {
+  //     set.status = 401;
+  //     return { error: 'Non autorisé' };
+  //   }
+
+  //   const { id } = params;
+
+  //   const signalement = await prisma.signalement.findUnique({
+  //     where: { id },
+  //     include: {
+  //       categorie: true,
+  //       statut: true,
+  //       commentaires: {
+  //         orderBy: { createdAt: 'asc' }
+  //       },
+  //       historiqueStatuts: {
+  //         include: {
+  //           ancienStatut: true,
+  //           nouveauStatut: true,
+  //           administrateur: {
+  //             select: { nom: true, email: true }
+  //           }
+  //         },
+  //         orderBy: { createdAt: 'asc' }
+  //       }
+  //     }
+  //   });
+
+  //   if (!signalement) {
+  //     set.status = 404;
+  //     return { error: "Signalement introuvable" };
+  //   }
+
+  //   return signalement;
+  // }, {
+  //   detail: {
+  //     tags: ['Admin - Signalements'],
+  //     summary: "Détails complets d'un signalement",
+  //     security: [{ bearerAuth: [] }]
+  //   }
+  // })
+
+  // 🔓 Route de test du token - VERSION AMÉLIORÉE
+  .get('/me', async ({ currentAdmin, set }) => {
     if (!currentAdmin) {
       set.status = 401;
       return { error: 'Non autorisé' };
-    }
-
-    const { id } = params;
-
-    const signalement = await prisma.signalement.findUnique({
-      where: { id },
-      include: {
-        categorie: true,
-        statut: true,
-        commentaires: {
-          orderBy: { createdAt: 'asc' }
-        },
-        historiqueStatuts: {
-          include: {
-            ancienStatut: true,
-            nouveauStatut: true,
-            administrateur: {
-              select: { nom: true, email: true }
-            }
-          },
-          orderBy: { createdAt: 'asc' }
-        }
-      }
-    });
-
-    if (!signalement) {
-      set.status = 404;
-      return { error: "Signalement introuvable" };
-    }
-
-    return signalement;
-  }, {
-    detail: {
-      tags: ['Admin - Signalements'],
-      summary: "Détails complets d'un signalement",
-      security: [{ bearerAuth: [] }]
-    }
-  })
-
-  // 🔓 Route de test du token
-  .get('/me', async ({ currentAdmin }) => {
-    if (!currentAdmin) {
-      throw new Error('Non autorisé');
     }
 
     return {
@@ -590,6 +610,20 @@ export const adminRoutes = new Elysia({ prefix: '/api/admin' })
       }
     };
   }, {
+    response: {
+      200: t.Object({
+        admin: t.Object({
+          id: t.String(),
+          nom: t.String(),
+          email: t.String(),
+          role: t.String(),
+          actif: t.Boolean(),
+        }),
+      }),
+      401: t.Object({
+        error: t.String(),
+      }),
+    },
     detail: {
       tags: ['Admin'],
       summary: "Informations de l'admin connecté",

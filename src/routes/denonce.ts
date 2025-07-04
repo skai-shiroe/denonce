@@ -2,6 +2,9 @@ import { Elysia, t } from 'elysia';
 import { randomUUIDv7 } from 'bun';
 import { prisma } from '../lib/prisma';
 
+// ✅ NOUVEAU - Ajouté au début du fichier
+const DEFAULT_IMAGE_URL = `http://localhost:3000/assets/signalment.png`;
+
 export const declarationRoutes = new Elysia({ prefix: '/api/declarations' })
 
   // 📥 Créer une déclaration anonyme
@@ -65,7 +68,8 @@ export const declarationRoutes = new Elysia({ prefix: '/api/declarations' })
           categorieId,
           statutId: statutDefaut.id,
           lieu,
-          mediaUrl,
+          // ✅ Amélioration de la logique d'attribution de l'image
+          mediaUrl: mediaUrl && mediaUrl.trim() !== '' ? mediaUrl : DEFAULT_IMAGE_URL,
           codeSuivi,
         },
         include: {
@@ -173,6 +177,47 @@ export const declarationRoutes = new Elysia({ prefix: '/api/declarations' })
       summary: "Lister tous les signalements publics",
     }
   })
+
+  
+    // 📄 Détails d'un signalement (PROTÉGÉ)
+    .get('/signalements/:id', async ({ params, set }) => {
+      const { id } = params;
+
+      const signalement = await prisma.signalement.findUnique({
+        where: { id },
+        include: {
+          categorie: true,
+          statut: true,
+          commentaires: {
+            orderBy: { createdAt: 'asc' }
+          },
+          historiqueStatuts: {
+            include: {
+              ancienStatut: true,
+              nouveauStatut: true,
+              administrateur: {
+                select: { nom: true, email: true }
+              }
+            },
+            orderBy: { createdAt: 'asc' }
+          }
+        }
+      });
+
+      if (!signalement) {
+        set.status = 404;
+        return { error: "Signalement introuvable" };
+      }
+
+      return signalement;
+    }, {
+      detail: {
+        tags: ['Public - Signalements'],
+        summary: "Détails complets d'un signalement (public)",
+        description: "Permet de consulter les détails d'un signalement sans authentification"
+      }
+    })
+
 
   // 📄 Voter pour un signalement
   .post('/:id/vote', async ({ params, set }) => {

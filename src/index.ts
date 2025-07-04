@@ -1,11 +1,16 @@
 import { Elysia } from 'elysia';
 import { swagger } from '@elysiajs/swagger';
 import { cors } from '@elysiajs/cors';
+import { staticPlugin } from '@elysiajs/static';
 import { declarationRoutes } from './routes/denonce';
 import { adminRoutes } from './routes/admin';
 
 const app = new Elysia()
   .use(cors())
+  .use(staticPlugin({
+    assets: "src/assets",
+    prefix: "/assets",
+  }))
   .use(swagger({
     documentation: {
       info: {
