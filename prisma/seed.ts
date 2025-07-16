@@ -156,12 +156,12 @@ async function main() {
 
   // Créer un super administrateur par défaut
   console.log('👤 Création des administrateurs...');
-  const hashedPassword = await bcrypt.hash('admin123', 10);
+  const hashedPassword = await bcrypt.hash('@@#Skai0840', 10);
   const superAdmin = await prisma.administrateur.upsert({
-    where: { email: "admin@denonce.tg" },
+    where: { email: "skaiadmin@denonce.libre" },
     update: {},
     create: {
-      email: "admin@denonce.tg",
+      email: "skaiadmin@denonce.libre",
       nom: "Super Administrateur",
       motDePasse: hashedPassword,
       role: "super_admin"
@@ -169,7 +169,7 @@ async function main() {
   });
 
   // Créer un administrateur normal
-  const hashedPasswordAdmin = await bcrypt.hash('admin456', 10);
+  const hashedPasswordAdmin = await bcrypt.hash('@@#Skai0840', 10);
   const admin = await prisma.administrateur.upsert({
     where: { email: "moderateur@denonce.tg" },
     update: {},
@@ -185,8 +185,8 @@ async function main() {
   console.log(`📂 ${categories.length} catégories créées`);
   console.log(`📊 ${statuts.length} statuts créés`);
   console.log(`👤 Administrateurs créés:`);
-  console.log(`   🔑 Super Admin: ${superAdmin.email} / admin123`);
-  console.log(`   🔑 Admin: ${admin.email} / admin456`);
+  console.log(`   🔑 Super Admin: ${superAdmin.email} / password`);
+  console.log(`   🔑 Admin: ${admin.email} / password`);
   console.log(`\n🚀 Vous pouvez maintenant démarrer l'API avec: bun run dev`);
 }
 
